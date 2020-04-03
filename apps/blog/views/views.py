@@ -54,8 +54,6 @@ class BlogViewSet(ModelViewSet):
 
     permission_classes = (IsAuthenticated,)  # 全局视图的认证方式
 
-
-
     def get_queryset(self):
         '''
         可以根据请求参数自定制querryset
@@ -104,7 +102,7 @@ class BlogViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):  # 复杂的情况下重写视图集下面的各种方法
         return super().create(request)
 
-    @cache_response(timeout=60 * 60)
+    # @cache_response(timeout=60 * 60)
     def list(self, request, *args, **kwargs):
         return super().list(request)
 

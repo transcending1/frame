@@ -1,27 +1,19 @@
-from apps.blog.models.sql_models import Blog, Article
+import json, time
 
+from apps.article.models import Book,Category, Chapter
 
-def new_add():
-    '''
-        新增一条内容
-    '''
-    # 平常的表单添加
-    # blog = Blog(name="test").save()
-    article = Article.objects.get_or_create(name="你好")    # 数据库中不存在就创建
+value = {
+    'node_name': "xxx",
+    'node_id': 12,
+    'need_pay': bool
+}
+c = Chapter.objects.get(pk=3)
 
-    # 外键添加    情景:一对多,在多表中添加单表实例
-    article = Article(name="你好", blog=Blog.objects.get(id=1)).save()  # 情景一:添加记录的时候顺便添加外键
+t1 = time.time()
+v = json.loads(c.content)
+t2 = time.time()
 
-
-    # 外键添加
-
-
-
-
-
-
-if __name__ == "__main__":
-    new_add()
+print(t2-t1,'\n', v)
 
 
 

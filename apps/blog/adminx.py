@@ -1,7 +1,6 @@
 import xadmin
 from django.http import HttpResponse
 from xadmin import views
-from xadmin.views import BaseAdminPlugin, ListAdminView
 
 from apps.blog.models import Blog, Article, Fans
 from xadmin.plugins.actions import BaseActionView
@@ -20,12 +19,6 @@ class GlobalSettings(object):
 ## 整体站点设计
 xadmin.site.register(views.BaseAdminView, BaseSetting)
 xadmin.site.register(views.CommAdminView, GlobalSettings)
-
-
-
-
-
-
 
 
 class BlogAction(BaseActionView):
@@ -90,7 +83,7 @@ class BlogAdmin(object):
         "user": {'title': u"统计", "x-field": "create_time", "y-field": ("price", ), "order": ('create_time',)},
     }
 
-xadmin.site.register(Blog,BlogAdmin)
+xadmin.site.register(Blog, BlogAdmin)
 xadmin.site.register(Article)
 xadmin.site.register(Fans)
 

@@ -271,8 +271,7 @@
 13.依赖包管理         ==> 全部放在 requirement.txt文件下面管理即可
     	pip install pipreqs
 		pipreqs ./ --encoding=utf-8   #会自动生成 requirements.txt文件,里面存放全部的项目运用到的插件信息  Django Flask都适用
-		pip install -r requirement.txt	   #直接安装
-
+        pip install -i https://mirrors.ustc.edu.cn/pypi/web/simple/ -r requirement.txt
 
 
 14.缓存架构:

@@ -6,11 +6,11 @@ from django.db.models import DateTimeField, Manager, Model,NullBooleanField,Bool
 class BaseModelManager(Manager):
     '''模型管理类,可自定制常用的方法'''
 
-    def filter(self):
+    def filter(self, *args, **kwargs):
         '''
             filter定制:仅仅返回没有删除的内容
         '''
-        return super().filter(is_deleted=False)
+        return super().filter(is_deleted=False ,*args, **kwargs)
 
     def all(self):
         '''

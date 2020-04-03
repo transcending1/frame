@@ -2,6 +2,7 @@ from django.db.models import CharField, DecimalField, DateTimeField, IntegerFiel
     ManyToManyField,SmallIntegerField
 
 from exlib.sql_extension import BaseModel
+from django.db import models
 
 
 class Blog(BaseModel):
@@ -32,12 +33,11 @@ class Blog(BaseModel):
         return "test_{}".format(self.name)
 
 
-
 class Article(BaseModel):
     name = CharField(max_length=11,blank=True)
     price = DecimalField(blank=True,max_digits=8,decimal_places=2)
     content = TextField(blank=True)
-    blog = ForeignKey(Blog,related_name="article")
+    blog = ForeignKey(Blog,related_name="article", on_delete=models.CASCADE)
 
 
 class Fans(BaseModel):

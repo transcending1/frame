@@ -16,11 +16,12 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'rest_framework',
-    'xadmin',  # xadmin
-    'crispy_forms',  # xadmin
-    'reversion',  # xadmin
+    # 'xadmin',  # xadmin
+    # 'crispy_forms',  # xadmin
+    # 'reversion',  # xadmin
     'apps.blog',
     'apps.users',
+    'apps.article',
 
 ]
 
@@ -73,12 +74,9 @@ REST_FRAMEWORK = {  # 添加, 后续的一切 RESTFUL配置都往里面添加
 
 ####################  JWT鉴权机制 + 用户认证机制 ########################
 JWT_AUTH = {
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),  # JWT生成的状态码的有效时间
-    'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.authorizations_extension.jwt_response_payload_handler',  # 自定制用户登录成功后的返回信息
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=30),  # JWT生成的状态码的有效时间
 }
-AUTHENTICATION_BACKENDS = [
-    'utils.authorizations_extension.UsernameMobileAuthBackend',  # Django自定制认证机制:默认根据用户名和密码,可以进行拓展,变成自己想要的方式
-]
+
 
 ######################## CORS跨域组件  ############################
 CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
@@ -149,7 +147,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static_file')   # 执行命令收集静态
 STATIC_URL = '/static/'  # 访问静态文件用到的url前缀(url以这种方式开头,那么Django不会去寻找动态资源了,直接到下面的文件寻找静态资源)
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # 告知Django静态文件保存在哪个目录下(列表,可以多个地方存放静态资源)
 # 前端访问示例: <img src="/static/imgs/avatar01.png" />
-
+print(STATIC_ROOT)
 
 
 # 测试环境配置信息覆盖

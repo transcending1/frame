@@ -16,9 +16,9 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'rest_framework',
-    'xadmin',  # xadmin
-    'crispy_forms',  # xadmin
-    'reversion',  # xadmin
+    # 'xadmin',  # xadmin
+    # 'crispy_forms',  # xadmin
+    # 'reversion',  # xadmin
     'apps.blog',
     'apps.users',
     'apps.article',

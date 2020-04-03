@@ -42,7 +42,7 @@ MIDDLEWARE = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
+        "LOCATION": "redis://101.200.58.126/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -86,17 +86,30 @@ CORS_ORIGIN_ALLOW_ALL = True  # 直接允许所有主机跨域
 ROOT_URLCONF = 'urls'  # 主url路径
 
 ########################## 数据库相关  ###################################
-DATABASES = {  # sql
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+import pymysql
+pymysql.install_as_MySQLdb()
+DATABASES = {
+    'default': {  # 主服务器
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': '101.200.58.126',  # 数据库主机
+        'PORT': 3306,  # 数据库端口
+        'USER': 'root',  # 数据库用户名
+        'PASSWORD': '123456',  # 数据库用户密码
+        'NAME': 'frame'  # 数据库名字
+    },
+    'slave': {  # 从服务器
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': '101.200.58.126',  # 数据库主机
+        'PORT': 3306,  # 数据库端口
+        'USER': 'root',  # 数据库用户名
+        'PASSWORD': '123456',  # 数据库用户密码
+        'NAME': 'frame'  # 数据库名字
     }
 }
-
 ################## mongoengine连接 #################
 from mongoengine import connect
 
-connect('book', host='18.162.148.37', port=27017)  # mongoengine初始化
+connect('book', host='101.200.58.126', port=27017)  # mongoengine初始化
 
 AUTH_PASSWORD_VALIDATORS = [
     {

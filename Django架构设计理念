@@ -331,7 +331,7 @@
         def __str__(self):
             return '%s: %s' % (self.id, self.name)
         class Meta:
-            db_table = 'tb_sku'
+
             verbose_name = '商品SKU'
             verbose_name_plural = verbose_name
     3.CharField(max_length=50)          字符串限制最大长度

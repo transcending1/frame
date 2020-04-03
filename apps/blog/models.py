@@ -18,7 +18,7 @@ class Blog(BaseModel):
         return self.name
 
     class Meta:
-        db_table = 'tb_sku'
+
         verbose_name = '博客'
         verbose_name_plural = verbose_name
 

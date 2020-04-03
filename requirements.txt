@@ -1,0 +1,6 @@
+celery==4.4.2
+Django==1.11
+mongoengine==0.18.2
+Flask_Login==0.4.1
+APScheduler==3.6.1
+pymongo==3.9.0

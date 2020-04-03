@@ -1,0 +1,574 @@
+1.测试环境配置正式环境配置分离
+    通过git控制，如果存在local_config这个文件读取测试配置信息,否则读取正式环境的配置信息,local_config为git忽略文件
+
+    配置文件的最后一行加上对应的内容即可,把特有的配置信息写在测试环境里面即可覆盖正式环境配置
+    try:
+        from local_config import *
+    except:
+        pass
+
+    1.生产环境的 DEBUG 设置为 False
+    2.代码中测试环境正式环境隔离:settings中的IS_TEST参数来控制即可
+    3.通用的配置信息放在settings.py文件下面即可
+
+
+2.项目的配置环境选择:
+    1.不使用一个文件夹来代表一个主的url以及主的settings,wsgi,拆分到最外部即可
+    通过修改    BASE_DIR = os.path.dirname(os.path.abspath(__file__))    来执行项目的开始路径
+    需要修改的内容注意:
+        ROOT_URLCONF = 'urls'       ==>更改对应的主url文件路径
+        WSGI_APPLICATION = wsgi.application
+        ## 时区初始化
+        LANGUAGE_CODE = 'zh-hans'  # 语言设置为 中文
+        TIME_ZONE = 'Asia/Shanghai'  # 时区设置为 亚洲/上海，注意没有北京
+        # 静态资源(调试的时候使用,部署的时候使用别的服务器来访问)
+        STATIC_URL = '/static/'  # 访问静态文件用到的url前缀(url以这种方式开头,那么Django不会去寻找动态资源了,直接到下面的文件寻找静态资源)
+        STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static_files')]  # 告知Django静态文件保存在哪个目录下(列表,可以多个地方存放静态资源)
+        # 跨域
+        ALLOWED_HOSTS = ["*"]
+
+3.app新增与定义新规范:
+    1.python manage.py startapp blog    通过命令行的模式来新增一个app
+    2.在项目的目录下面新建一个apps文件夹,把对应的内容放到里面,删除一些无效冗余的代码,新建urls文件来决定路由分发
+    3.主路由放在最外层的urls.py的文件下面,其余分发的路由放在对应的模块下面即可
+
+
+
+4.视图定义规范:
+    1.使用类视图来进行对应的设计:     拓展:可以对类视图或者内部的函数使用对应的装饰器来实现对应的拓展功能
+    2.命名规范:
+        1.驼峰命名  后缀为Views           BlogViews   BlogStaticViews
+
+
+
+5.脚本规范
+    0.在apps下面的__init__.py文件里面导入对应的Django环境
+    1.所有的脚本文件放入 scripts文件夹中
+    2.只需要执行一次的脚本放入对应模块的his文件夹中:内部写好对应注释,说明执行脚本的目的是什么,文件名写明对应的日期
+    3.经常通用的模块脚本则写入对应模块名的文件夹中,对应模块需要
+
+
+6.关系型数据库model层规范
+    0.数据库迁移:
+        1.python manage.py makemigrations               python manage.py migrate
+        2.python manage.py migrate --fake-initial       migrate的时候出现表已经存在的情况
+        3.python manage.py migrate --fake <appname>
+
+    1.字段定义:
+        1.时间全部采用北京时间
+        2.所有字段必须存在,没有对应的内容用Null来存储,不要定义为缺少某个字段
+
+    2.表单目录结构定义规范
+        1.关系型数据库: 核心字段信息以及可复用的方法放在models.py文件里面,其余拓展的ORM模型放在extend_models里面
+        2.mongoengine:  mongo_app名字
+        3.可复用性高的业务代码写在对应的model层,如果有特定的业务代码可以通过父类继承的方式来拓展对应的业务逻辑(暂时不用)放在extend_models下面
+
+
+
+
+7.跨域问题插件解决:
+	#pip install django-cors-headers
+	settings.py中配置:
+		添加应用
+		INSTALLED_APPS = (
+			...
+			'corsheaders',
+			...
+		)
+		中间层设置(注意:放在最顶上,一开始访问就会执行校验,判断是否可以访问,提高效率)
+		MIDDLEWARE = [
+			'corsheaders.middleware.CorsMiddleware',
+			...
+		]
+	CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
+	CORS_ORIGIN_ALLOW_ALL = True   #直接允许所有主机跨域
+
+
+8.restframework 规范
+    0.对内部解耦规范的深刻理解:
+        1.反序列化操作做字段合法性校验,如果合法就可以存入数据库,不合法返回异常进行给前端,保证在核心业务逻辑层面都是拿到的最干净的数据,可以直接进行逻辑的编写,而不需要校验各种字段的合法性了
+        2.需要返回哪些字段可以在序列化器或者property属性内部定义,也可以在遍历querryset的时候进行赋值操作
+        3.进行数据库存储或者更新的时候在序列化层的create方法以及update方法内部做对应的操作,解决需不需要保存到另外的表单的问题
+            1.理解:此时已经拿到了所有规范的数据,已经可以进行所有的业务逻辑的操作了,所有的核心业务逻辑写在这两个方法下面即可
+            2.不同细微的逻辑写在model层,复用性高的业务逻辑直接写在model层,复用性低的逻辑可以做单元测试,业务复杂可以写在对应的继承类中
+        4.对单一资源的各种操作方式全部放到视图集内部处理,里面可以新增不同的动作,可以定义对应
+        5.前后端交互规范:
+            1.视图集内的每个方法注明对应方法的处理逻辑
+        6.异常处理信息以及异常日志信息全部在异常处理模块解决,核心代码中不使用 try  except的方式,在极端的情况下可以考虑使用  ==>配合try  except的方式可以进行拓展
+
+
+
+
+
+    1.settings.py中定义对应的内容
+        INSTALLED_APPS = [   #app中添加
+            'rest_framework',
+        ]
+
+        REST_FRAMEWORK = {    #添加, 后续的一切 RESTFUL配置都往里面添加
+        "DEFAULT_AUTHENTICATION_CLASSES": []
+        }
+
+    2.文档生成规范:
+        1.自动接口文档能生成的是继承自 APIView 及其子类的视图
+        2.浏览器访问 127.0.0.1:8000/docs/，即可看到自动生成的接口文档,方便前端进行接口对接
+
+    3.序列化器的使用
+        1.源代码中存在各种可用的方法,data,error等静态属性以及校验等方法,如果有拓展的需求可以考虑查看
+        2.外键序列化器仅仅使用两种形式的序列化器:1.仅仅返回id的序列化器  2.可以灵活自定义的序列化器    静态属性通过cached_property可以来进一步拓展,减少数据库的查询次数
+
+    4.反序列化验证方式
+        1.验证:A.字段选项验证   B.自定义方法验证
+        2.字符串类型的校验:需要根据模型类来指定
+            1.字符串类型:最大长度,最小长度验证
+            2.整形验证:最大值,最小值验证
+            3.通用参数:
+                1.default = xxx     反序列化默认值 如果前端不传递参数默认值为10,注意:不使用这种方式,使用模型类的default方法即可
+                2.required = True   是否必填
+                3.write_only = True   说明该字段仅仅用于反序列化输入
+            4.构建API页面的时候需要指定的说明信息:
+                label	用于HTML展示API页面时，显示的字段名称
+                help_text	用于HTML展示API页面时，显示的字段帮助提示信息
+
+    5.read_only  write_only  指明对应的字段只参与序列化或者只参与反序列化操作     如果字段仅仅参与一种方式的传递,就需要指明对应的参数
+        场景:1.如果仅仅需要参与序列化过程:需要指定 read_only = True  否则会进行反序列化的校验,影响到反序列化
+             2.write_only 指明仅仅反序列化校验,不参与序列化校验
+
+        规定:序列化字段和反序列化字段需要在序列化器内部明确区分出来,提高可读性与代码的可维护性
+
+    6.优先使用模型序列化器,在模型序列化器上面进行拓展,所有在Serializer中使用的属性都可以在Serializer中使用
+
+    7.视图的定义以及使用规范:结合序列化器以及反序列化器进行操作:越往下优先级越高
+        !! 全部使用视图集进行拓展,对单一资源进行各种拓展控制,通过action装饰器+自定义函数 来自定义自己需要的内容
+        核心掌握APIView,GenericAPIview已经拓展类即可,其余的都是拓展继承关系
+        1.APIView  继承自Django的View类  ==>1.权限 2.认证  3.限流 功能
+        2.GenericAPIview   继承自APIView   ==>0.指定序列化器 1.分页  2.过滤排序  3.指定查询集(querryset)获取数据对象:两大特性:1.惰性查询 2.缓存:获取querryset对象后放在内存中然后遍历一次进行一次查询,然后再次遍历对应的querryset对象的时候不会进行再一次的查询
+        3.优先使用GenericAPIview的拓展类+GenericAPIview进行相关操作:
+            1.ListModelMixin        获取多个数据对象
+            2.CreateModelMixin      保存数据
+            3.RetrieveModelMixin    获取单个数据对象
+            4.UpdateModelMixin      更新数据
+            5.DestroyModelMixin     删除数据
+        4.优先使用拓展类子类进行操作==>优势:不用进行函数的书写
+            CreateAPIView   新增
+            ListAPIView     列表
+            RetrieveAPIView   获取单一
+            DestoryAPIView  删除单一
+            UpdateAPIView 更新单一
+            RetrieveUpdateAPIView   获取,更新单一
+            RetrieveUpdateDestoryAPIView    获取,更新,删除单一
+        5.最优先使用视图集:增加了额外的功能 ==>1.路由匹配规则发生了变化   2.视图中定义方法不再按照请求方式定义
+            1.ViewSet(继承自APIView):
+                使用视图集ViewSet，可以将一系列逻辑相关的动作放到一个类中：
+                    list() 提供一组数据   /books/ get请求
+                    retrieve() 提供单个数据  /books/1  get请求
+                    create() 创建数据   /books/  post请求
+                    update() 保存数据   /books/2 put请求
+                    destory() 删除数据  /books/3  delete请求
+            2.GenericViewSet(继承自GenericAPIView,可以调用 GenericAPIView的方法进行拓展)
+            3.拓展视图集:ModelViewSet   都继承自GenericViewSet  同时继承了拓展类:同时包括了ListModelMixin、RetrieveModelMixin、CreateModelMixin、UpdateModelMixin、DestoryModelMixin
+            4.拓展视图集:ReadOnlyModelViewSet    只读的拓展类 同时包括了ListModelMixin、RetrieveModelMixin
+                仅仅使用 ReadOnlyModelViewSet,以及 ModelViewSet来进行最基本的增删改查操作即可,不使用原始视图集
+
+
+
+
+    8.请求响应的处理发生的变化
+        1.Request对象:
+            1.GET参数获取:request.query_params
+            2.POST参数获取:request.data      # 包含了对POST、PUT、PATCH请求方式解析后的数据,直接转换为字典类型的数据
+        2.Response对象:
+            Response(data, status=None)      # 返回序列化之后的内容  status指定状态码
+
+    9.反爬虫限流措施:
+        1.针对IP 或者针对用户进行限流操作   (待定)
+
+    10.过滤参数:
+        0.可以根据前端传递的参数进行过滤queryset数据处理
+        1.注册应用: 'django_filters',  # 需要注册应用
+        2.REST_FRAMEWORK = {'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend')}
+
+    11.排序组件
+        filter_backends = [OrderingFilter]  # 排序操作的使用
+        ordering_fields = ('create_time',)  # 排序操作
+
+    12.分页组件
+        1.自己定义分页器:在utils文件夹下面自定义自己想要的分页器
+
+
+    13.异常处理机制
+        1.在utils文件夹下面自定义自己想要的异常处理函数
+            REST_FRAMEWORK = {
+                'EXCEPTION_HANDLER': 'my_project.my_app.utils.custom_exception_handler'
+            }
+            REST framework定义的异常进行捕获,其他的异常通过通用Exception进行捕获或者通过特定的异常类进行捕获
+                APIException 所有异常的父类
+                ParseError 解析错误
+                AuthenticationFailed 认证失败
+                NotAuthenticated 尚未认证
+                PermissionDenied 权限决绝
+                NotFound 未找到
+                MethodNotAllowed 请求方式不支持
+                NotAcceptable 要获取的数据格式不支持
+                Throttled 超过限流次数
+                ValidationError 校验失败
+
+
+
+9.拓展的工具类写在对应的exlib中,对框架级别的代码进行定制化处理
+    1.sql的拓展类
+    2.mongo的拓展类
+    3.对返回方式的进一步自定制封装
+    4.全局异常捕获类+日志监控异常信息
+
+
+10.定时器任务规范
+    0.新增一台服务器启动定时器任务或者在一台服务器上面启动定时器任务,程序中可以动态添加定时器任务到mongo然后在对应的服务器上专门执行定时器任务
+    1.采用ApScheduler组件进行拓展
+    2.每个模块静态的定时器任务放在每个模块下对应的tasks文件里面
+    3.采用监听的方式进行定时器任务的监听,后续需要把对应的数据全部放到数据库的表单中,完成定时器任务监听以及可视化操作
+    4.动态定时器通过消息队列来遍历实现对应的定时操作,不采用内置的定时器任务机制来实现,或者在一台定时器任务服务器上面采用监听的方式来动态添加对应的定时器任务
+
+
+11.utils文件夹存放对应的工具
+    0.中间件存放==>有需要的时候可以在对应的中间层添加内容
+    1.定时器任务服务器,把对应的定时器任务都注册到内部,启动即可
+
+
+12.异步任务服务器celery规范
+    0.视图中cpu密集型任务以及阻塞任务全部使用celery处理,不能直接写在对应的视图中
+    1.在config中设置对应的broker  以及官方文档上的各种参数
+    2.核心代码写在celery_tasks下面,新建一个文件夹代表对应的任务名称内部的tasks存放核心代码,在main.py中注册对应的函数即可
+
+    启动: celery -A celery_tasks.main worker -l info -P eventlet -c 1000
+        常用参数:
+            1.通过 -c 来指定并发的数量大小
+            2.-A 指定主函数路径
+            3.-l info为日志打印等级
+
+
+    调用方式:导入celery中的函数,执行
+        result = send_sms_code.delay(参数)
+        result.id  :可以获得异步任务的id    在redis或者对应的数据库中加上默认的前缀 celery-task-meta-xxxxxx  可以访问对应回调内容   ==>待拓展:默认前缀需要自定制命名规范
+
+
+    #celery内部已经实现的机制:
+        1.自动重连机制,与broker断开后自动重新连接
+        2.A single Celery process can process millions of tasks a minute,
+        3.启动的时候默认进程数为该计算机的子进程数量
+
+    拓展:
+        1.可以连接到redis集群   https://docs.celeryproject.org/en/stable/getting-started/brokers/redis.html#broker-redis
+
+
+    监控系统:
+        https://docs.celeryproject.org/en/stable/userguide/monitoring.html#introduction
+        pip install flower
+        celery -A celery_tasks.main flower --port=5555      使用一个端口开启监控进程,然后可视化监控对应的内容
+
+
+
+13.依赖包管理         ==> 全部放在 requirement.txt文件下面管理即可
+    	pip install pipreqs
+		pipreqs ./ --encoding=utf-8   #会自动生成 requirements.txt文件,里面存放全部的项目运用到的插件信息  Django Flask都适用
+		pip install -r requirement.txt	   #直接安装
+
+
+
+14.缓存架构:
+    1.model层缓存:cached_property + 对应的set,del方法来控制对应的缓存
+    2.redis缓存规范:
+        1.数据结构的选择:
+            不是经常更新的内容使用string类型进行缓存处理   比如用户资料
+            统计相关的内容使用zset进行缓存处理   用户粉丝数,用户关注数,文章收藏数,文章点击数等等 利用有序集合的特点进行持久化可以轻松置顶文章
+        2.解决缓存穿透,缓存雪崩的问题
+    3.redis的使用:使用django-redis来解决对应的问题
+
+
+15.Django内置用户鉴权机制的使用:
+    0.创建用户模块继承自内部抽象用户模型类
+        AUTH_USER_MODEL = 'users.User'
+    1.采用JWT认证方式
+        验证用户名和密码，验证成功后，为用户签发JWT，前端将签发的JWT保存下来。
+        REST_FRAMEWORK = {
+            'DEFAULT_AUTHENTICATION_CLASSES': (
+                'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+                'rest_framework.authentication.SessionAuthentication',
+                'rest_framework.authentication.BasicAuthentication',
+            ),
+        }
+
+        JWT_AUTH = {
+            'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),  #有效期
+        }
+
+    2.注册相关的路由    ==>需要自定制序列化器全部重写登录的机制,用内置的机制太死板,不能满足全部的需求
+    3.自定义返回的内容
+         JWT_AUTH = {
+             'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+             'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler',    #写入导包路径(sys.path.join后的路径)
+         }
+
+
+16.Django后台管理相关信息:
+    '''仅仅供开发使用,线上环境不使用对应的后台管理'''
+    python manage.py createsuperuser   #创建超级用户
+    在每个模块的admin.py文件下注册对应的模型类对象即可访问
+    admin.site.register(Blog)
+    admin.site.register(Article)
+    admin.site.register(Fans)
+
+    ## 初始化 pip install https://github.com/sshwsfc/xadmin/tarball/master
+    Xadmin相关规定:
+    1.模型类层面的规定:
+        def __str__(self):        # 1.规定好对应的显示信息
+            return self.name
+
+
+
+17.模型类字段定义规范
+    1.所有的字段加上verbose_name="xxx"指明对应的字段含义,如果明确含义的话加上default,有选择的话加上choices,可以为空的话加上null=True, blank=True 这两个属性
+    2.所有的表加上对应的描述信息
+        def __str__(self):
+            return '%s: %s' % (self.id, self.name)
+        class Meta:
+            db_table = 'tb_sku'
+            verbose_name = '商品SKU'
+            verbose_name_plural = verbose_name
+    3.CharField(max_length=50)          字符串限制最大长度
+    4.DecimalField(max_digits=10, decimal_places=2, verbose_name="单价")           小数类型指明对应的有效数字以及小数保留的位数
+    5.TextField()    长文本用Text来取代CharField   比如评论信息
+    SCORE_CHOICES = (
+        (0, '0分'),
+        (1, '20分'),
+        (2, '40分'),
+        (3, '60分'),
+        (4, '80分'),
+        (5, '100分'),
+    )
+    6.SmallIntegerField(choices=SCORE_CHOICES, default=5, verbose_name='满意度评分')    分类的问题用小整形来解决展示
+    7.模型类外键需要设置属性:related_name="article" 来指定反向查询的key
+    ############ 索引的创建 ##############
+    1.常用的字段需要建立对应的索引,提高搜索效率
+        db_index	若值为True, 则在表中会为此字段创建索引，默认值是False
+
+
+18.Restful风格定义路由
+    1.将API部署在专用的域名下面   比如: https://api.example.com
+    2.API版本控制:                比如: http://www.example.com/app/1.0/foo          #请求路径携带版本号:不同版本内容返回不同数据:通过视图层面的逻辑来控制不同版本的逻辑
+    3.路径:每个网址代表一种资源
+        1.对于一个简洁结构，你应该始终用名词(始终用名词复数形式)。 此外，利用的HTTP方法可以分离网址中的资源名称的操作。
+            GET /products ：将返回所有产品清单
+            POST /products ：将产品新建到集合
+            GET /products/4 ：将获取产品 4
+            PATCH（或）PUT /products/4 ：将更新产品 4
+        2.动词采用请求的方式进行
+            GET /zoos：列出所有动物园
+            POST /zoos：新建一个动物园（上传文件）
+            GET /zoos/ID：获取某个指定动物园的信息
+            PUT /zoos/ID：更新某个指定动物园的信息（提供该动物园的全部信息）
+            PATCH /zoos/ID：更新某个指定动物园的信息（提供该动物园的部分信息）
+            DELETE /zoos/ID：删除某个动物园
+            GET /zoos/ID/animals：列出某个指定动物园的所有动物
+            DELETE /zoos/ID/animals/ID：删除某个指定动物园的指定动物
+    4.过滤信息的传递全部使用查询字符串形式的方式进行传递:GET的方式,如果多个参数采用逗号分隔
+        ?limit=10：指定返回记录的数量
+        ?offset=10：指定返回记录的开始位置。
+        ?page=2&per_page=100：指定第几页，以及每页的记录数。
+        ?sortby=name&order=asc：指定返回结果按照哪个属性排序，以及排序顺序。
+        ?animal_type_id=1：指定筛选条件
+    5.状态码的规定
+        400 INVALID REQUEST - [POST/PUT/PATCH]：用户发出的请求有错误，服务器没有进行新建或修改数据的操作
+        401 Unauthorized - [*]：表示用户没有权限（令牌、用户名、密码错误）。
+        403 Forbidden - [*] 表示用户得到授权（与401错误相对），但是访问是被禁止的。
+        404 NOT FOUND - [*]：用户发出的请求针对的是不存在的记录，服务器没有进行操作，该操作是幂等的。
+    6.错误处理: 如果状态码是4xx，服务器就应该向用户返回出错信息。一般来说，返回的信息中将error作为键名，出错信息作为键值即可
+        携带对应的错误信息返回给前端{error: "Invalid API key"}
+    7.返回结果规定
+        GET /collection：返回资源对象的列表（数组）
+        GET /collection/resource：返回单个资源对象
+        POST /collection：返回新生成的资源对象
+        PUT /collection/resource：返回完整的资源对象
+        PATCH /collection/resource：返回完整的资源对象
+        DELETE /collection/resource：返回一个空文档
+
+
+19.项目部署相关:
+    1.收集静态文件
+    2.创建配置文件uwsgi.ini
+        [uwsgi]
+        #使用nginx连接时使用，Django程序所在服务器地址
+        socket=127.0.0.1:8001
+        #项目目录
+        chdir=/Users/delron/Desktop/meiduo/meiduo_mall
+        #项目中wsgi.py文件的目录，相对于项目目录
+        wsgi-file=/wsgi.py
+        # 进程数
+        processes=4
+        # 线程数
+        threads=2
+        # uwsgi服务器的角色
+        master=True
+        # 存放进程编号的文件
+        pidfile=uwsgi.pid
+        # 日志文件，因为uwsgi可以脱离终端在后台运行，日志看不见。以前的runserver是依赖终端的
+        daemonize=uwsgi.log
+        # 指定依赖的虚拟环境
+        virtualenv=/Users/smart/.virtualenvs/meiduo
+    3.启动uwsgi服务器
+        uwsgi --ini uwsgi.ini
+    4.nginx配置
+         upstream meiduo {
+             server 10.211.55.2:8001;  # 此处为uwsgi运行的ip地址和端口号
+             # 如果有多台服务器，可以在此处继续添加服务器地址
+         }
+
+         #gzip  on;
+         server {
+             listen  8000;
+             server_name api.meiduo.site;   此域名访问uswgi相关内容
+
+             location / {
+                 include uwsgi_params;
+                 uwsgi_pass meiduo;
+             }
+
+         }
+
+
+         server {
+             listen       80;
+             server_name  www.meiduo.site;   #此域名访问Django内部静态文件以及对应的前端文件以及报错后的页面
+
+             #charset koi8-r;
+
+             #access_log  logs/host.access.log  main;
+             location /xadmin {
+                 include uwsgi_params;
+                 uwsgi_pass meiduo;
+             }
+
+             location /ckeditor {
+                 include uwsgi_params;
+                 uwsgi_pass meiduo;
+             }
+
+             location / {
+                 root   /home/python/Desktop/front_end_pc;
+                 index  index.html index.htm;
+             }
+
+
+             error_page   500 502 503 504  /50x.html;
+             location = /50x.html {
+                 root   html;
+             }
+
+         }
+
+20.项目缓存使用规范:
+    # 1.仅仅针对资源的简单缓存:
+        0.所有的缓存写入redis中,不用django的缓存
+        1.pip install drf-extensions    drf插件
+        2.配置文件中设置:
+              REST_FRAMEWORK_EXTENSIONS = {
+                  # 缓存时间
+                  'DEFAULT_CACHE_RESPONSE_TIMEOUT': 60 * 60,
+                  # 缓存存储
+                  'DEFAULT_USE_CACHE': 'default',      #名字为  配置为 settings.py CACHES 中的 key (可以用redis来先)
+              }
+        3.使用装饰器进行资源的缓存: @cache_response(timeout=60 * 60)
+        4.应用场景:不适用于分页数据的缓存,
+        5.提供机制的缺陷:根据请求方式等内容来生成缓存==>
+            拓展:1.根据 类视图+方法 的联合唯一性来生成redis的key即可
+                 2.需要写一个装饰器来释放对应的缓存:当前端触发了更新或者新增的操作立刻释放对应的缓存   (缓存穿透解决方案)
+
+
+    # 2.针对复杂业务逻辑的缓存:
+        针对对应的业务逻辑在redis中设计对应的数据结构来缓存:
+        1.改动频繁的内容使用对应的数据结构来缓存
+        2.改动不频繁的内容使用string来缓存
+        3.缓存更新机制:新增或者更新进行缓存删除,查询的时候加入缓存
+
+
+    # 3.批量redis操作用管道完成
+    # 4.如果涉及高并发:需要提供缓存雪崩的解决方案,暂时没有用到对应的方案
+
+
+21.复杂表单设计参考
+    1.多级菜单(类别):   自关联                 ==>很多外键都需要指向这里.   尽量减少连表查询操作
+        1.关系型:遍历的时候递归遍历或者序列化器深度指定即可
+            name = models.CharField(max_length=10, verbose_name='名称')
+            sub = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, verbose_name='父类别')
+
+        2.Mongo:ListField指向下一层即可
+
+    2.评论也是树形结构的数据,无论是什么数据库设计成深度为2层的树即可满足业务需求
+
+
+
+
+22.权限管理系统:
+    1.Permission表单:
+        1.每一个model的增删改查的权限
+            [{
+            "id": 1,
+            "name": "Can add log entry",          增
+            "codename": "add_logentry",
+            "content_type": 1                    外键关联到Content_type
+            },
+            {
+            "id": 2,
+            "name": "Can change log entry",       改
+            "codename": "change_logentry",
+            "content_type": 1
+            },
+            {
+            "id": 3,
+            "name": "Can delete log entry",       删
+            "codename": "delete_logentry",
+            "content_type": 1
+            },
+            {
+            "id": 4,
+            "name": "Can view log entry",         查
+            "codename": "view_logentry",
+            "content_type": 1
+            },
+            ]
+    2.ContentType类型表单:
+        1.默认每个model下面有对应的权限(示例如下)
+            [{
+                "id": 1,
+                "name": "日志记录",
+                "app_label": "admin",
+                "model": "logentry"
+            },
+            {
+                "id": 2,
+                "name": "权限",
+                "app_label": "auth",
+                "model": "permission"
+            },
+            {
+                "id": 3,
+                "name": "组",
+                "app_label": "auth",
+                "model": "group"
+            }]
+    3.Group用户组管理
+        思维:
+        1.一个用户属于哪些组      一对多        页面上可以配置
+        2.一个组里面的人拥有哪些权限         一对多          页面上需要把所有权限列出来配置
+        3.用户有哪些特殊权限   一对多
+
+
+
+
+
+23.爬虫规范
+    1.所有网站采集下来的书全部做统一的处理,进行相应的数据融合然后放到数据库里面
+    2.对应的数据结构都应该保持一致,不应该有偏差,统一化处理相应数据.
+    3.所有脏数据的清洗都应该在爬虫端完成,不应该放在后端代码层面进行控制
+    4.通过阿里云日志简历爬虫监控系统,爬取的状态都应该被实时监控下来,有错误发生建立对应的报警机制
+

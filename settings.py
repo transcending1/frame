@@ -160,7 +160,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static_file')   # 执行命令收集静态
 STATIC_URL = '/static/'  # 访问静态文件用到的url前缀(url以这种方式开头,那么Django不会去寻找动态资源了,直接到下面的文件寻找静态资源)
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # 告知Django静态文件保存在哪个目录下(列表,可以多个地方存放静态资源)
 # 前端访问示例: <img src="/static/imgs/avatar01.png" />
-print(STATIC_ROOT)
 
 
 # 测试环境配置信息覆盖

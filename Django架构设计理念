@@ -430,7 +430,11 @@
         1.80端口监听
         2.负载均衡到uwsgi服务
         3.静态文件管理:负载均衡到各个静态文件服务器
-
+    5.systemctl + git 实现项目自动化部署
+        0.systemctl管理nginx,uwsgi
+            /root/.virtualenvs/frame/bin/uwsgi --ini /root/frame/uwsgi/uwsgi.ini
+        1.git更新代码
+        2.由远到近  关闭nginx   关闭uwsgi   开启uwsgi  开启nginx
 
 20.项目缓存使用规范:
     # 1.仅仅针对资源的简单缓存:

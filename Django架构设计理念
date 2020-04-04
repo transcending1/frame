@@ -422,20 +422,24 @@
         virtualenv=/root/.virtualenvs/frame/bin/python3.6
     3.启动uwsgi服务器
         uwsgi --ini uwsgi.ini
+    3.1.重启
+        uwsgi --reload uwsgi.pid
+    3.2.停止
+        uwsgi --stop uwsgi.pid
     4.nginx配置
-         upstream meiduo {
-             server 10.211.55.2:8001;  # 此处为uwsgi运行的ip地址和端口号
+         upstream frame {
+             server 0.0.0.0:8001;  # 此处为uwsgi运行的ip地址和端口号
              # 如果有多台服务器，可以在此处继续添加服务器地址
          }
 
          #gzip  on;
          server {
              listen  8000;
-             server_name api.meiduo.site;   此域名访问uswgi相关内容
+             server_name api.frame.site;   此域名访问uswgi相关内容
 
              location / {
                  include uwsgi_params;
-                 uwsgi_pass meiduo;
+                 uwsgi_pass frame;
              }
 
          }
@@ -443,30 +447,14 @@
 
          server {
              listen       80;
-             server_name  www.meiduo.site;   #此域名访问Django内部静态文件以及对应的前端文件以及报错后的页面
+             server_name  www.frame.site;   #此域名访问Django内部静态文件以及对应的前端文件以及报错后的页面
 
              #charset koi8-r;
 
              #access_log  logs/host.access.log  main;
-             location /xadmin {
+             location /docs {
                  include uwsgi_params;
-                 uwsgi_pass meiduo;
-             }
-
-             location /ckeditor {
-                 include uwsgi_params;
-                 uwsgi_pass meiduo;
-             }
-
-             location / {
-                 root   /home/python/Desktop/front_end_pc;
-                 index  index.html index.htm;
-             }
-
-
-             error_page   500 502 503 504  /50x.html;
-             location = /50x.html {
-                 root   html;
+                 uwsgi_pass frame;
              }
 
          }

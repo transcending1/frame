@@ -398,7 +398,7 @@
     2.wsgi.py中更改配置文件路径,保证是生产环境的配置文件
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "meiduo_mall.settings.dev")
     3.安装:  pip install uwsgi
-    
+
     1.收集静态文件
     2.创建配置文件uwsgi.ini
         [uwsgi]
@@ -419,7 +419,7 @@
         # 日志文件，因为uwsgi可以脱离终端在后台运行，日志看不见。以前的runserver是依赖终端的
         daemonize=uwsgi.log
         # 指定依赖的虚拟环境
-        virtualenv=/root/.virtualenvs/frame/bin/python
+        virtualenv=/root/.virtualenvs/frame/bin/python3.6
     3.启动uwsgi服务器
         uwsgi --ini uwsgi.ini
     4.nginx配置
